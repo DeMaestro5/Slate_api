@@ -1,4 +1,5 @@
 import Joi from 'joi';
+import { INDUSTRIES } from '../../constants/industries';
 
 // Reserved slugs that can't be used for portfolios
 export const RESERVED_SLUGS = [
@@ -46,7 +47,11 @@ export default {
         'any.invalid': 'This slug is reserved and cannot be used',
       }),
     description: Joi.string().required().min(10).max(2000),
-    category: Joi.string().required().min(2).max(100),
+    category: Joi.string()
+      .valid(...INDUSTRIES)
+      .required()
+      .min(2)
+      .max(100),
     imageUrl: Joi.string().uri().optional().allow(''),
     images: Joi.array().items(Joi.string().uri()).optional(),
     projectDate: Joi.date().required(),
