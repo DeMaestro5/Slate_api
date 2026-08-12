@@ -17,6 +17,7 @@ export interface CreatePortfolioData {
   caseStudy?: string;
   testimonial?: string;
   order?: number;
+  isPublished?: boolean;
 }
 
 export interface UpdatePortfolioData {
@@ -54,7 +55,10 @@ async function existsForUser(id: string, userId: string): Promise<boolean> {
 /**
  * Check if slug is available
  */
-async function isSlugAvailable(slug: string, excludeId?: string): Promise<boolean> {
+async function isSlugAvailable(
+  slug: string,
+  excludeId?: string,
+): Promise<boolean> {
   const existing = await prisma.portfolio.findFirst({
     where: {
       slug,
@@ -138,10 +142,7 @@ async function findAllByUser(
     where,
     skip,
     take,
-    orderBy: [
-      { order: 'asc' },
-      { createdAt: 'desc' },
-    ],
+    orderBy: [{ order: 'asc' }, { createdAt: 'desc' }],
   });
 }
 
@@ -182,10 +183,7 @@ async function findPublishedByUserId(userId: string): Promise<Portfolio[]> {
       isPublished: true,
       deletedAt: null,
     },
-    orderBy: [
-      { order: 'asc' },
-      { createdAt: 'desc' },
-    ],
+    orderBy: [{ order: 'asc' }, { createdAt: 'desc' }],
   });
 }
 
@@ -226,11 +224,14 @@ async function create(data: CreatePortfolioData): Promise<Portfolio> {
       images: data.images ? (data.images as any) : Prisma.JsonNull,
       projectDate: data.projectDate,
       client: data.client,
-      technologies: data.technologies ? (data.technologies as any) : Prisma.JsonNull,
+      technologies: data.technologies
+        ? (data.technologies as any)
+        : Prisma.JsonNull,
       liveUrl: data.liveUrl,
       githubUrl: data.githubUrl,
       caseStudy: data.caseStudy,
       testimonial: data.testimonial,
+      isPublished: data.isPublished,
       order,
     },
   });
@@ -348,7 +349,9 @@ async function getAnalytics(userId: string) {
   });
 
   const totalViews = portfolioItems.reduce((sum, item) => sum + item.views, 0);
-  const publishedCount = portfolioItems.filter((item) => item.isPublished).length;
+  const publishedCount = portfolioItems.filter(
+    (item) => item.isPublished,
+  ).length;
   const totalCount = portfolioItems.length;
 
   // Most viewed items
@@ -369,10 +372,12 @@ async function getAnalytics(userId: string) {
     publishedItems: publishedCount,
     unpublishedItems: totalCount - publishedCount,
     topItems,
-    viewsByCategory: Object.entries(viewsByCategory).map(([category, views]) => ({
-      category,
-      views,
-    })),
+    viewsByCategory: Object.entries(viewsByCategory).map(
+      ([category, views]) => ({
+        category,
+        views,
+      }),
+    ),
   };
 }
 
