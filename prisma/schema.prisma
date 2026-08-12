@@ -23,6 +23,13 @@ enum PaymentTerms {
   CUSTOM
 }
 
+enum MilestoneStatus {
+  PENDING
+  COMPLETED
+  INVOICED
+  PAID
+}
+
 enum SubscriptionTier {
   FREE
   PRO
@@ -365,6 +372,8 @@ model Client {
   @@map("clients")
 }
 
+
+
 // ============================================
 // INVOICE MANAGEMENT
 // ============================================
@@ -407,6 +416,7 @@ model Invoice {
   lineItems      InvoiceLineItem[]
   payments       Payment[]
   emailLogs      EmailLog[]
+  milestones     Milestone[]   
   
   @@unique([userId, invoiceNumber])
   @@index([projectId])
@@ -565,6 +575,7 @@ model Project {
   proposal       Proposal?     @relation(fields: [proposalId], references: [id])
   contract       Contract?     @relation(fields: [contractId], references: [id])
   invoices       Invoice[]
+  milestones     Milestone[]   
   
   @@index([userId])
   @@index([clientId])
@@ -759,6 +770,30 @@ model WaitlistEmail {
   @@map("waitlist_emails")
 }
 
+
+model Milestone {
+  id          String          @id @default(uuid())
+  projectId   String
+  project     Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  invoiceId   String?
+  invoice     Invoice?        @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+
+  name        String
+  amount      Decimal         @db.Decimal(10, 2)
+  order       Int             @default(0)
+
+  status      MilestoneStatus @default(PENDING)
+  dueDate     DateTime?       @db.Date
+  completedAt DateTime?
+
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([projectId])
+  @@index([invoiceId])
+  @@map("milestones")
+}
+
 model Feedback {
   id        String         @id @default(uuid())
   userId    String
@@ -776,3 +811,5 @@ model Feedback {
   @@index([type])
   @@map("feedback")
 }
+
+
