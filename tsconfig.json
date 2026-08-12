@@ -25,6 +25,6 @@
       "*": ["node_modules/*", "src/types/*"]
     }
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "prisma/backfillMilestones.ts"],
   "exclude": [".templates"]
 }
