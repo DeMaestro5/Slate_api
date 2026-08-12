@@ -490,7 +490,7 @@ model Portfolio {
   description   String    @db.Text
   category      String
   
-  imageUrl      String?
+  imageUrl      String? 
   images        Json?     // Array of image URLs
   
   projectDate   DateTime
