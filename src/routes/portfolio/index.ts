@@ -3,10 +3,7 @@ import { SuccessResponse } from '../../core/ApiResponse';
 import { CacheService } from '../../cache/CacheService';
 import { CacheKeys, TTL } from '../../cache/keys';
 import PortfolioRepo from '../../database/repository/PortfolioRepo';
-import {
-  BadRequestError,
-  NotFoundError,
-} from '../../core/ApiError';
+import { BadRequestError, NotFoundError } from '../../core/ApiError';
 import validator from '../../helpers/validator';
 import schema from './schema';
 import asyncHandler from '../../helpers/asyncHandler';
@@ -15,10 +12,7 @@ import { ProtectedRequest } from '../../types/app-request';
 import authentication from '../../auth/authentication';
 import { checkUsageLimit } from '../../middleware/subscription-check';
 
-
-
 const router = express.Router();
-
 
 /*---------------------------------------------------------*/
 // All routes require authentication
@@ -45,7 +39,10 @@ router.get(
     const cacheKey = CacheKeys.portfolioList(userId, page, limit);
     const cached = await CacheService.get(cacheKey);
     if (cached) {
-      return new SuccessResponse('Portfolio items fetched successfully', cached as object).send(res);
+      return new SuccessResponse(
+        'Portfolio items fetched successfully',
+        cached as object,
+      ).send(res);
     }
 
     const skip = (page - 1) * limit;
@@ -71,7 +68,9 @@ router.get(
     };
     await CacheService.set(cacheKey, payload, TTL.LIST);
 
-    new SuccessResponse('Portfolio items fetched successfully', payload).send(res);
+    new SuccessResponse('Portfolio items fetched successfully', payload).send(
+      res,
+    );
   }),
 );
 /**
@@ -101,7 +100,9 @@ router.post(
     // Check if slug is available
     const slugAvailable = await PortfolioRepo.isSlugAvailable(req.body.slug);
     if (!slugAvailable) {
-      throw new BadRequestError('This slug is already taken. Please choose another.');
+      throw new BadRequestError(
+        'This slug is already taken. Please choose another.',
+      );
     }
 
     // Convert date if provided as string
@@ -124,10 +125,13 @@ router.post(
       githubUrl: req.body.githubUrl,
       caseStudy: req.body.caseStudy,
       testimonial: req.body.testimonial,
+      isPublished: req.body.isPublished,
       order: req.body.order,
     });
 
-    await CacheService.invalidatePattern(CacheKeys.userPortfolioPattern(req.user.id));
+    await CacheService.invalidatePattern(
+      CacheKeys.userPortfolioPattern(req.user.id),
+    );
 
     new SuccessResponse('Portfolio item created successfully', {
       portfolio: formatPortfolioData(portfolio),
@@ -163,7 +167,10 @@ router.put(
   validator(schema.update),
   asyncHandler(async (req: ProtectedRequest, res) => {
     // Check if portfolio exists
-    const exists = await PortfolioRepo.existsForUser(req.params.id, req.user.id);
+    const exists = await PortfolioRepo.existsForUser(
+      req.params.id,
+      req.user.id,
+    );
     if (!exists) {
       throw new NotFoundError('Portfolio item not found');
     }
@@ -175,14 +182,18 @@ router.put(
         req.params.id,
       );
       if (!slugAvailable) {
-        throw new BadRequestError('This slug is already taken. Please choose another.');
+        throw new BadRequestError(
+          'This slug is already taken. Please choose another.',
+        );
       }
     }
 
     // Convert date if provided
     const updateData = {
       ...req.body,
-      projectDate: req.body.projectDate ? new Date(req.body.projectDate) : undefined,
+      projectDate: req.body.projectDate
+        ? new Date(req.body.projectDate)
+        : undefined,
     };
 
     const portfolio = await PortfolioRepo.update(
@@ -191,7 +202,9 @@ router.put(
       updateData,
     );
 
-    await CacheService.invalidatePattern(CacheKeys.userPortfolioPattern(req.user.id));
+    await CacheService.invalidatePattern(
+      CacheKeys.userPortfolioPattern(req.user.id),
+    );
 
     new SuccessResponse('Portfolio item updated successfully', {
       portfolio: formatPortfolioData(portfolio),
@@ -206,14 +219,22 @@ router.put(
 router.delete(
   '/:id',
   asyncHandler(async (req: ProtectedRequest, res) => {
-    const exists = await PortfolioRepo.existsForUser(req.params.id, req.user.id);
+    const exists = await PortfolioRepo.existsForUser(
+      req.params.id,
+      req.user.id,
+    );
     if (!exists) {
       throw new NotFoundError('Portfolio item not found');
     }
 
-    const portfolio = await PortfolioRepo.softDelete(req.params.id, req.user.id);
+    const portfolio = await PortfolioRepo.softDelete(
+      req.params.id,
+      req.user.id,
+    );
 
-    await CacheService.invalidatePattern(CacheKeys.userPortfolioPattern(req.user.id));
+    await CacheService.invalidatePattern(
+      CacheKeys.userPortfolioPattern(req.user.id),
+    );
 
     new SuccessResponse('Portfolio item deleted successfully', {
       portfolio: formatPortfolioData(portfolio),
@@ -227,10 +248,13 @@ router.delete(
  */
 router.post(
   '/:id/publish',
-  
+
   validator(schema.publish),
   asyncHandler(async (req: ProtectedRequest, res) => {
-    const exists = await PortfolioRepo.existsForUser(req.params.id, req.user.id);
+    const exists = await PortfolioRepo.existsForUser(
+      req.params.id,
+      req.user.id,
+    );
     if (!exists) {
       throw new NotFoundError('Portfolio item not found');
     }
@@ -241,17 +265,19 @@ router.post(
       req.body.isPublished,
     );
 
-    await CacheService.invalidatePattern(CacheKeys.userPortfolioPattern(req.user.id));
+    await CacheService.invalidatePattern(
+      CacheKeys.userPortfolioPattern(req.user.id),
+    );
 
     new SuccessResponse(
-      `Portfolio item ${req.body.isPublished ? 'published' : 'unpublished'} successfully`,
+      `Portfolio item ${
+        req.body.isPublished ? 'published' : 'unpublished'
+      } successfully`,
       {
         portfolio: formatPortfolioData(portfolio),
       },
     ).send(res);
   }),
 );
-
-
 
 export default router;
