@@ -20,11 +20,12 @@
     "resolveJsonModule": true,
     "sourceMap": true,
     "outDir": "build",
+    "rootDir": "src",
     "baseUrl": ".",
     "paths": {
       "*": ["node_modules/*", "src/types/*"]
     }
   },
-  "include": ["src/**/*", "prisma/backfillMilestones.ts"],
+  "include": ["src/**/*", "src/scripts/backfillMilestones.ts"],
   "exclude": [".templates"]
 }

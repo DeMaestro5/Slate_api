@@ -32,6 +32,7 @@ import publicPortfolioLink from './portfolio/public';
 import uploadRoutes from './upload';
 import settings from './settings';
 import subscription from './subscription';
+import milestones from './milestone';
 import admin from './admin';
 import feedback from './feedback';
 import stripeSubscriptionWebhook from './webhooks/stripe-subscription';
@@ -52,24 +53,27 @@ router.use('/p', publicPortfolioLink);
 router.use('/public', publicRouter);
 
 // Public invoice endpoint — no API key required, used by /pay page
-router.get('/invoices/:id/public', asyncHandler(async (req, res) => {
-  const invoice = await InvoiceRepo.findByIdPublic(req.params.id);
-  if (!invoice) throw new NotFoundError('Invoice not found');
+router.get(
+  '/invoices/:id/public',
+  asyncHandler(async (req, res) => {
+    const invoice = await InvoiceRepo.findByIdPublic(req.params.id);
+    if (!invoice) throw new NotFoundError('Invoice not found');
 
-  new SuccessResponse('Invoice fetched successfully', {
-    invoice: {
-      id: invoice.id,
-      invoiceNumber: invoice.invoiceNumber,
-      status: invoice.status,
-      total: invoice.total,
-      currency: invoice.currency,
-      dueDate: invoice.dueDate,
-      issueDate: invoice.issueDate,
-      businessName: invoice.user?.businessName || invoice.user?.name || null,
-      client: { companyName: invoice.client?.companyName },
-    },
-  }).send(res);
-}));
+    new SuccessResponse('Invoice fetched successfully', {
+      invoice: {
+        id: invoice.id,
+        invoiceNumber: invoice.invoiceNumber,
+        status: invoice.status,
+        total: invoice.total,
+        currency: invoice.currency,
+        dueDate: invoice.dueDate,
+        issueDate: invoice.issueDate,
+        businessName: invoice.user?.businessName || invoice.user?.name || null,
+        client: { companyName: invoice.client?.companyName },
+      },
+    }).send(res);
+  }),
+);
 
 /*---------------------------------------------------------*/
 router.use(apikey);
@@ -100,6 +104,7 @@ router.use('/portfolio', portfolio);
 router.use('/upload', uploadRoutes);
 router.use('/settings', settings);
 router.use('/subscription', subscription);
+router.use('/', milestones);
 router.use('/feedback', feedback);
 router.use('/admin', admin);
 
