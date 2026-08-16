@@ -26,6 +26,7 @@ export default {
   }),
 
   update: Joi.object().keys({
+    clientId: Joi.string().optional().uuid(),
     name: Joi.string().optional().min(1).max(255),
     description: Joi.string().optional().allow(''),
     status: Joi.string()
