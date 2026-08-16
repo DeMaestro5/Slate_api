@@ -12,6 +12,7 @@ async function findByProjectId(projectId: string) {
   return prisma.milestone.findMany({
     where: { projectId },
     orderBy: { order: 'asc' },
+    include: { invoice: { select: { id: true, status: true } } },
   });
 }
 

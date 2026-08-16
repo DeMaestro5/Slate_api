@@ -8,10 +8,6 @@ import ProjectRepo from '../../database/repository/ProjectRepo';
 import { NotFoundError } from '../../core/ApiError';
 import MilestoneRepo from '../../database/repository/MilestoneRepo';
 import { SuccessResponse } from '../../core/ApiResponse';
-import { sendReminderEmail } from '../../services/Email.service';
-import { logEmail } from '../../services/emailLog';
-import { EmailStatus, EmailType } from '@prisma/client';
-import Logger from '../../core/Logger';
 
 const router = express.Router();
 router.use(authentication);
@@ -27,7 +23,7 @@ router.get(
     if (!project) throw new NotFoundError('Project not found');
 
     const milestone = await MilestoneRepo.findByProjectId(req.params.projectId);
-    new SuccessResponse('Milestone retrieved', { milestone }).send(res);
+    new SuccessResponse('Milestones retrieved', { milestones: milestone }).send(res);
   }),
 );
 
@@ -64,7 +60,7 @@ router.put(
     const owns = await MilestoneRepo.existsForUser(req.params.id, req.user.id);
     if (!owns) throw new NotFoundError('Milestone not found');
 
-    const milestone = await MilestoneRepo.update(req.params.id, {
+    const milestones = await MilestoneRepo.update(req.params.id, {
       ...(req.body.name !== undefined && { name: req.body.name }),
       ...(req.body.amount !== undefined && { amount: req.body.amount }),
       ...(req.body.dueDate !== undefined && {
@@ -74,13 +70,13 @@ router.put(
         invoiceId: req.body.invoiceId,
       }),
     });
-    new SuccessResponse('Milestone updates', { milestone }).send(res);
+    new SuccessResponse('Milestone updates', { milestones }).send(res);
   }),
 );
 
 //delete a milestone
 router.delete(
-  '/milestone/:id',
+  '/milestones/:id',
   asyncHandler(async (req: ProtectedRequest, res) => {
     const owns = await MilestoneRepo.existsForUser(req.params.id, req.user.id);
     if (!owns) throw new NotFoundError('Milestone not found');
@@ -89,64 +85,16 @@ router.delete(
   }),
 );
 
-// mark milestone complete - fires a reminder email IF an invoice is linked
+// mark milestone complete
 
 router.patch(
-  '/milestone/:id/complete',
+  '/milestones/:id/complete',
   asyncHandler(async (req: ProtectedRequest, res) => {
     const owns = await MilestoneRepo.existsForUser(req.body.id, req.user.id);
     if (!owns) throw new NotFoundError('Milestone not found');
-    const milestone = await MilestoneRepo.markComplete(req.params.id);
-    const full = await MilestoneRepo.findById(milestone.id);
+    const milestones = await MilestoneRepo.markComplete(req.params.id);
 
-    let emailSent = false;
-
-    if (full?.invoice && full.invoice.client?.email) {
-      try {
-        emailSent = await sendReminderEmail(
-          full.invoice.client.email,
-          full.invoice.client.contactName || full.invoice.client.companyName,
-          full.invoice.invoiceNumber,
-          new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: full.invoice.currency,
-          }).format(Number(full.invoice.total)),
-          full.invoice.dueDate.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          }),
-          0, // treated as 'due now' - milestone reached
-        );
-
-        await logEmail({
-          userId: req.user.id,
-          recipient: full.invoice.client.email,
-          subject: `Milestone reached: ${milestone.name}`,
-          type: EmailType.REMINDER,
-          status: emailSent ? EmailStatus.SENT : EmailStatus.FAILED,
-          invoiceId: full.invoice.id,
-          sentAt: emailSent ? new Date() : undefined,
-        });
-      } catch (error) {
-        Logger.error('[Milestone] reminder email failed', {
-          error,
-          milestoneId: milestone.id,
-        });
-      }
-    } else {
-      Logger.info(
-        '[Milestone] completed with no linked invoice - no reminder sent',
-      ),
-        {
-          milestoneId: milestone.id,
-        };
-    }
-
-    new SuccessResponse('Milestone marked complete', {
-      milestone,
-      emailSent,
-    }).send(res);
+    new SuccessResponse('Milestone marked complete', { milestones }).send(res);
   }),
 );
 
