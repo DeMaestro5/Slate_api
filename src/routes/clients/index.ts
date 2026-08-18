@@ -35,7 +35,10 @@ router.get(
     const cacheKey = CacheKeys.clientList(userId, page, limit, search || '');
     const cached = await CacheService.get(cacheKey);
     if (cached) {
-      return new SuccessResponse('Clients fetched successfully', cached as object).send(res);
+      return new SuccessResponse(
+        'Clients fetched successfully',
+        cached as object,
+      ).send(res);
     }
 
     const skip = (page - 1) * limit;
@@ -78,7 +81,9 @@ router.post(
       notes: req.body.notes,
     });
 
-    await CacheService.invalidatePattern(CacheKeys.userClientsPattern(req.user.id));
+    await CacheService.invalidatePattern(
+      CacheKeys.userClientsPattern(req.user.id),
+    );
     await CacheService.invalidateUserDashboard(req.user.id);
 
     new SuccessResponse('Client created successfully', {
@@ -97,7 +102,10 @@ router.get(
     const cacheKey = `client:${req.user.id}:${req.params.id}`;
     const cached = await CacheService.get(cacheKey);
     if (cached) {
-      return new SuccessResponse('Client fetched successfully', cached as object).send(res);
+      return new SuccessResponse(
+        'Client fetched successfully',
+        cached as object,
+      ).send(res);
     }
     const client = await ClientRepo.findById(req.params.id, req.user.id);
     if (!client) throw new NotFoundError('Client not found');
@@ -111,6 +119,62 @@ router.get(
  * PUT /api/v1/clients/:id
  * Update client information
  */
+
+/**
+ * POST /clients/:clientId/projects
+ * Create a project for a specific client
+ */
+router.post(
+  '/:clientId/projects',
+  validator(schema.createProjectForClient),
+  asyncHandler(async (req: ProtectedRequest, res) => {
+    const { clientId } = req.params;
+    const { id: userId } = req.user;
+
+    const project = await ClientRepo.createProject(clientId, userId, req.body);
+
+    await CacheService.invalidatePattern(CacheKeys.userProjectsPattern(userId));
+    await CacheService.invalidatePattern(CacheKeys.userClientsPattern(userId));
+
+    new SuccessResponse('Project created successfully', {
+      project,
+    }).send(res);
+  }),
+);
+
+/**
+ * GET /clients/:clientId/projects
+ * Get all projects for a specific client with pagination and filtering
+ */
+router.get(
+  '/:clientId/projects',
+  validator(schema.getClientProjects),
+  asyncHandler(async (req: ProtectedRequest, res) => {
+    const { clientId } = req.params;
+    const { id: userId } = req.user;
+
+    const cacheKey = `client:${userId}:${clientId}:projects:${JSON.stringify(
+      req.query,
+    )}`;
+    const cached = await CacheService.get(cacheKey);
+    if (cached) {
+      return new SuccessResponse(
+        'Projects fetched successfully',
+        cached as object,
+      ).send(res);
+    }
+
+    const result = await ClientRepo.getClientProjects(
+      clientId,
+      userId,
+      req.query,
+    );
+
+    await CacheService.set(cacheKey, result, 300);
+
+    new SuccessResponse('Projects fetched successfully', result).send(res);
+  }),
+);
 router.put(
   '/:id',
   validator(schema.update),
@@ -126,7 +190,9 @@ router.put(
       req.body,
     );
 
-    await CacheService.invalidatePattern(CacheKeys.userClientsPattern(req.user.id));
+    await CacheService.invalidatePattern(
+      CacheKeys.userClientsPattern(req.user.id),
+    );
     await CacheService.del(`client:${req.user.id}:${req.params.id}`);
     await CacheService.del(`client-stats:${req.user.id}:${req.params.id}`);
     await CacheService.del(`client-health:${req.user.id}:${req.params.id}`);
@@ -164,7 +230,9 @@ router.delete(
 
     await ClientRepo.remove(req.params.id, req.user.id);
 
-    await CacheService.invalidatePattern(CacheKeys.userClientsPattern(req.user.id));
+    await CacheService.invalidatePattern(
+      CacheKeys.userClientsPattern(req.user.id),
+    );
     await CacheService.invalidateUserDashboard(req.user.id);
     await CacheService.del(`client:${req.user.id}:${req.params.id}`);
     await CacheService.del(`client-stats:${req.user.id}:${req.params.id}`);
@@ -185,13 +253,24 @@ router.get(
     const cacheKey = `client-invoices:${req.user.id}:${req.params.id}`;
     const cached = await CacheService.get(cacheKey);
     if (cached) {
-      return new SuccessResponse('Client invoices fetched successfully', cached as object).send(res);
+      return new SuccessResponse(
+        'Client invoices fetched successfully',
+        cached as object,
+      ).send(res);
     }
-    const client = await ClientRepo.findByIdWithInvoices(req.params.id, req.user.id);
+    const client = await ClientRepo.findByIdWithInvoices(
+      req.params.id,
+      req.user.id,
+    );
     if (!client) throw new NotFoundError('Client not found');
-    const payload = { client: { id: client.id, companyName: client.companyName }, invoices: client.invoices };
+    const payload = {
+      client: { id: client.id, companyName: client.companyName },
+      invoices: client.invoices,
+    };
     await CacheService.set(cacheKey, payload, 300);
-    new SuccessResponse('Client invoices fetched successfully', payload).send(res);
+    new SuccessResponse('Client invoices fetched successfully', payload).send(
+      res,
+    );
   }),
 );
 
@@ -205,7 +284,10 @@ router.get(
     const cacheKey = `client-stats:${req.user.id}:${req.params.id}`;
     const cached = await CacheService.get(cacheKey);
     if (cached) {
-      return new SuccessResponse('Client stats fetched successfully', cached as object).send(res);
+      return new SuccessResponse(
+        'Client stats fetched successfully',
+        cached as object,
+      ).send(res);
     }
     const stats = await ClientRepo.getStats(req.params.id, req.user.id);
     if (!stats) throw new NotFoundError('Client not found');
@@ -225,13 +307,18 @@ router.get(
     const cacheKey = `client-health:${req.user.id}:${req.params.id}`;
     const cached = await CacheService.get(cacheKey);
     if (cached) {
-      return new SuccessResponse('Client health fetched successfully', cached as object).send(res);
+      return new SuccessResponse(
+        'Client health fetched successfully',
+        cached as object,
+      ).send(res);
     }
     const health = await ClientRepo.getHealth(req.params.id, req.user.id);
     if (!health) throw new NotFoundError('Client not found');
     const payload = { health };
     await CacheService.set(cacheKey, payload, 300);
-    new SuccessResponse('Client health fetched successfully', payload).send(res);
+    new SuccessResponse('Client health fetched successfully', payload).send(
+      res,
+    );
   }),
 );
 
