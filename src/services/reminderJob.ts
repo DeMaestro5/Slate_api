@@ -7,11 +7,17 @@ import { EmailStatus, EmailType, InvoiceStatus } from '@prisma/client';
 import logger from '../core/Logger';
 
 function formatCurrency(amount: number, currency: string): string {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(
+    amount,
+  );
 }
 
 function formatDate(date: Date): string {
-  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
 }
 
 function startOfDayUTC(date: Date): Date {
@@ -61,13 +67,15 @@ export async function runReminderJob(): Promise<void> {
           },
         },
         include: {
-          client: { select: { email: true, contactName: true, companyName: true } },
+          client: {
+            select: { email: true, contactName: true, companyName: true },
+          },
           user: { select: { name: true } },
         },
       });
 
       for (const invoice of invoices) {
-        if (!invoice.client.email) {
+        if (!invoice.client?.email) {
           totalSkipped++;
           continue;
         }
@@ -75,13 +83,17 @@ export async function runReminderJob(): Promise<void> {
         // Skip if already reminded today
         if (
           invoice.lastReminderSentAt &&
-          startOfDayUTC(invoice.lastReminderSentAt).getTime() === today.getTime()
+          startOfDayUTC(invoice.lastReminderSentAt).getTime() ===
+            today.getTime()
         ) {
           totalSkipped++;
           continue;
         }
 
-        const clientName = invoice.client.contactName || invoice.client.companyName;
+        const clientName =
+          invoice.client?.contactName ||
+          invoice.client?.companyName ||
+          'Client';
         const total = formatCurrency(Number(invoice.total), invoice.currency);
         const dueDate = formatDate(invoice.dueDate);
 
@@ -90,7 +102,7 @@ export async function runReminderJob(): Promise<void> {
 
         try {
           sent = await sendReminderEmail(
-            invoice.client.email,
+            invoice.client?.email,
             clientName,
             invoice.invoiceNumber,
             total,
@@ -117,7 +129,7 @@ export async function runReminderJob(): Promise<void> {
 
         await logEmail({
           userId,
-          recipient: invoice.client.email,
+          recipient: invoice.client?.email,
           subject: `Reminder: Invoice ${invoice.invoiceNumber}`,
           type: EmailType.REMINDER,
           status: sent ? EmailStatus.SENT : EmailStatus.FAILED,
@@ -129,7 +141,9 @@ export async function runReminderJob(): Promise<void> {
     }
   }
 
-  logger.info(`[ReminderJob] Done — sent: ${totalSent}, skipped: ${totalSkipped}`);
+  logger.info(
+    `[ReminderJob] Done — sent: ${totalSent}, skipped: ${totalSkipped}`,
+  );
 }
 
 export function startReminderJob(): void {

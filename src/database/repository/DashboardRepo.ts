@@ -61,11 +61,21 @@ async function getOverview(userId: string, startDate?: Date, endDate?: Date) {
   // ── Revenue ──────────────────────────────────────────────────────────────
   const [currentRevenueData, prevRevenueData] = await Promise.all([
     prisma.invoice.aggregate({
-      where: { userId, currency: userCurrency, status: 'PAID', paidAt: currentDateFilter },
+      where: {
+        userId,
+        currency: userCurrency,
+        status: 'PAID',
+        paidAt: currentDateFilter,
+      },
       _sum: { total: true },
     }),
     prisma.invoice.aggregate({
-      where: { userId, currency: userCurrency, status: 'PAID', paidAt: prevDateFilter },
+      where: {
+        userId,
+        currency: userCurrency,
+        status: 'PAID',
+        paidAt: prevDateFilter,
+      },
       _sum: { total: true },
     }),
   ]);
@@ -82,7 +92,11 @@ async function getOverview(userId: string, startDate?: Date, endDate?: Date) {
 
   // ── Outstanding (SENT + OVERDUE + PARTIALLY_PAID) ────────────────────────
   const outstandingData = await prisma.invoice.aggregate({
-    where: { userId, currency: userCurrency, status: { in: ['SENT', 'OVERDUE', 'PARTIALLY_PAID'] } },
+    where: {
+      userId,
+      currency: userCurrency,
+      status: { in: ['SENT', 'OVERDUE', 'PARTIALLY_PAID'] },
+    },
     _sum: { total: true },
   });
 
@@ -221,15 +235,15 @@ async function getOverview(userId: string, startDate?: Date, endDate?: Date) {
       totalInvoices,
       overdueInvoices: overdueCount,
     },
-    pendingByCurrency: pendingByCurrency.map(r => ({
+    pendingByCurrency: pendingByCurrency.map((r) => ({
       currency: r.currency,
       total: Number(r._sum.total ?? 0),
     })),
-    outstandingByCurrency: outstandingByCurrency.map(r => ({
+    outstandingByCurrency: outstandingByCurrency.map((r) => ({
       currency: r.currency,
       total: Number(r._sum.total ?? 0),
     })),
-    revenueByCurrency: revenueByCurrency.map(r => ({
+    revenueByCurrency: revenueByCurrency.map((r) => ({
       currency: r.currency,
       total: Number(r._sum.total ?? 0),
     })),
@@ -354,7 +368,11 @@ async function getExpensesChart(
       .map(([period, amount]) => ({ period, amount, currency: userCurrency }))
       .sort((a, b) => a.period.localeCompare(b.period)),
     byCategory: Array.from(groupedByCategory.entries())
-      .map(([category, amount]) => ({ category, amount, currency: userCurrency }))
+      .map(([category, amount]) => ({
+        category,
+        amount,
+        currency: userCurrency,
+      }))
       .sort((a, b) => b.amount - a.amount),
     total: expenses.reduce((sum, e) => sum + Number(e.amount), 0),
   };
@@ -396,10 +414,7 @@ async function getClientRevenue(userId: string, limit: number = 10) {
     .filter((c) => c.totalRevenue > 0)
     .sort((a, b) => b.totalRevenue - a.totalRevenue);
 
-  const grandTotal = allWithRevenue.reduce(
-    (sum, c) => sum + c.totalRevenue,
-    0,
-  );
+  const grandTotal = allWithRevenue.reduce((sum, c) => sum + c.totalRevenue, 0);
 
   const topN = allWithRevenue.slice(0, limit);
   const topNTotal = topN.reduce((sum, c) => sum + c.totalRevenue, 0);
@@ -475,7 +490,7 @@ async function getCashFlowForecast(userId: string, months: number = 6) {
     return {
       invoiceId: invoice.id,
       invoiceNumber: invoice.invoiceNumber,
-      clientName: invoice.client.companyName,
+      clientName: invoice.client?.companyName || 'Unassigned Client',
       dueDate: invoice.dueDate,
       expectedAmount,
       currency: invoice.currency,
@@ -529,11 +544,7 @@ async function getCashFlowForecast(userId: string, months: number = 6) {
   );
 
   // 2. Current month actual revenue (PAID invoices this month)
-  const currentMonthStart = new Date(
-    today.getFullYear(),
-    today.getMonth(),
-    1,
-  );
+  const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
   const currentMonthRevenue = await prisma.invoice.aggregate({
     where: {
       userId,
@@ -755,7 +766,7 @@ async function getRecentActivity(userId: string, limit: number = 10) {
     ...recentPayments.map((p) => ({
       id: p.id,
       type: 'PAYMENT_RECEIVED' as const,
-      clientName: p.invoice.client.companyName,
+      clientName: p.invoice.client?.companyName || 'Unassigned Client',
       invoiceNumber: p.invoice.invoiceNumber,
       amount: Number(p.amount),
       currency: p.currency,
@@ -766,7 +777,7 @@ async function getRecentActivity(userId: string, limit: number = 10) {
       type: (inv.status === 'OVERDUE' ? 'INVOICE_OVERDUE' : 'INVOICE_SENT') as
         | 'INVOICE_OVERDUE'
         | 'INVOICE_SENT',
-      clientName: inv.client.companyName,
+      clientName: inv.client?.companyName || 'Unassigned Client',
       invoiceNumber: inv.invoiceNumber,
       amount: Number(inv.total),
       currency: inv.currency,

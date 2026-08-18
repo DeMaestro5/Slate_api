@@ -436,8 +436,10 @@ async function buildInsightContext(userId: string) {
   // Client concentration: top client's share of revenue
   const revenueByClient: Record<string, number> = {};
   paidInvoices.forEach((inv) => {
-    revenueByClient[inv.clientId] =
-      (revenueByClient[inv.clientId] ?? 0) + Number(inv.total);
+    if (inv.clientId) {
+      revenueByClient[inv.clientId] =
+        (revenueByClient[inv.clientId] ?? 0) + Number(inv.total);
+    }
   });
   const clientRevenues = Object.values(revenueByClient);
   const topClientRevenue =

@@ -3,7 +3,7 @@ import { ProjectStatus } from '@prisma/client';
 
 export default {
   create: Joi.object().keys({
-    clientId: Joi.string().required().uuid(),
+    clientId: Joi.string().optional().uuid().allow(null),
     proposalId: Joi.string().optional().uuid(),
     contractId: Joi.string().optional().uuid(),
     name: Joi.string().required().min(1).max(255),
@@ -26,7 +26,7 @@ export default {
   }),
 
   update: Joi.object().keys({
-    clientId: Joi.string().optional().uuid(),
+    clientId: Joi.string().optional().uuid().allow(null),
     name: Joi.string().optional().min(1).max(255),
     description: Joi.string().optional().allow(''),
     status: Joi.string()

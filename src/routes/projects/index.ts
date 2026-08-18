@@ -39,7 +39,10 @@ router.get(
     const cacheKey = CacheKeys.projectList(userId, page, limit, status || '');
     const cached = await CacheService.get(cacheKey);
     if (cached) {
-      return new SuccessResponse('Projects fetched successfully', cached as object).send(res);
+      return new SuccessResponse(
+        'Projects fetched successfully',
+        cached as object,
+      ).send(res);
     }
 
     const skip = (page - 1) * limit;
@@ -69,40 +72,49 @@ router.post(
   checkUsageLimit('projects'),
   validator(schema.create),
   asyncHandler(async (req: ProtectedRequest, res) => {
-    // Verify client belongs to user
-    const clientExists = await ClientRepo.existsForUser(
-      req.body.clientId,
-      req.user.id,
-    );
-    if (!clientExists) {
-      throw new BadRequestError('Client not found or does not belong to you');
-    }
-
-    // If proposalId provided, verify it belongs to user and client
-    if (req.body.proposalId) {
-      const proposal = await ProposalRepo.findById(
-        req.body.proposalId,
+    // ONLY verify client if clientId is provided
+    if (req.body.clientId) {
+      const clientExists = await ClientRepo.existsForUser(
+        req.body.clientId,
         req.user.id,
       );
-      if (!proposal) {
-        throw new BadRequestError('Proposal not found');
+      if (!clientExists) {
+        throw new BadRequestError('Client not found or does not belong to you');
       }
-      if (proposal.clientId !== req.body.clientId) {
-        throw new BadRequestError('Proposal does not belong to this client');
-      }
-    }
 
-    // If contractId provided, verify it belongs to user and client
-    if (req.body.contractId) {
-      const contract = await ContractRepo.findById(
-        req.body.contractId,
-        req.user.id,
-      );
-      if (!contract) {
-        throw new BadRequestError('Contract not found');
+      // If proposalId provided, verify it belongs to user and client
+      if (req.body.proposalId) {
+        const proposal = await ProposalRepo.findById(
+          req.body.proposalId,
+          req.user.id,
+        );
+        if (!proposal) {
+          throw new BadRequestError('Proposal not found');
+        }
+        if (proposal.clientId !== req.body.clientId) {
+          throw new BadRequestError('Proposal does not belong to this client');
+        }
       }
-      if (contract.clientId !== req.body.clientId) {
-        throw new BadRequestError('Contract does not belong to this client');
+
+      // If contractId provided, verify it belongs to user and client
+      if (req.body.contractId) {
+        const contract = await ContractRepo.findById(
+          req.body.contractId,
+          req.user.id,
+        );
+        if (!contract) {
+          throw new BadRequestError('Contract not found');
+        }
+        if (contract.clientId !== req.body.clientId) {
+          throw new BadRequestError('Contract does not belong to this client');
+        }
+      }
+    } else {
+      // If no clientId, proposalId and contractId must also be null
+      if (req.body.proposalId || req.body.contractId) {
+        throw new BadRequestError(
+          'Proposal and Contract can only be assigned with a client',
+        );
       }
     }
 
@@ -123,9 +135,9 @@ router.post(
 
     const project = await ProjectRepo.create({
       userId: req.user.id,
-      clientId: req.body.clientId,
-      proposalId: req.body.proposalId,
-      contractId: req.body.contractId,
+      clientId: req.body.clientId || null,
+      proposalId: req.body.proposalId || null,
+      contractId: req.body.contractId || null,
       name: req.body.name,
       description: req.body.description,
       startDate,
@@ -135,7 +147,9 @@ router.post(
       paymentPlan: req.body.paymentPlan,
     });
 
-    await CacheService.invalidatePattern(CacheKeys.userProjectsPattern(req.user.id));
+    await CacheService.invalidatePattern(
+      CacheKeys.userProjectsPattern(req.user.id),
+    );
     await CacheService.invalidateUserDashboard(req.user.id);
 
     new SuccessResponse('Project created successfully', {
@@ -212,7 +226,9 @@ router.put(
       updateData,
     );
 
-    await CacheService.invalidatePattern(CacheKeys.userProjectsPattern(req.user.id));
+    await CacheService.invalidatePattern(
+      CacheKeys.userProjectsPattern(req.user.id),
+    );
     await CacheService.invalidateUserDashboard(req.user.id);
 
     new SuccessResponse('Project updated successfully', {
@@ -246,7 +262,9 @@ router.delete(
 
     await ProjectRepo.remove(req.params.id, req.user.id);
 
-    await CacheService.invalidatePattern(CacheKeys.userProjectsPattern(req.user.id));
+    await CacheService.invalidatePattern(
+      CacheKeys.userProjectsPattern(req.user.id),
+    );
     await CacheService.invalidateUserDashboard(req.user.id);
 
     new SuccessResponse('Project deleted successfully', {}).send(res);
@@ -311,7 +329,9 @@ router.post(
       },
     );
 
-    await CacheService.invalidatePattern(CacheKeys.userProjectsPattern(req.user.id));
+    await CacheService.invalidatePattern(
+      CacheKeys.userProjectsPattern(req.user.id),
+    );
 
     new SuccessResponse('Payment plan updated successfully', {
       project: getProjectData(updatedProject),
