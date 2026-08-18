@@ -128,13 +128,15 @@ router.post(
   checkUsageLimit('invoices'),
   validator(schema.create),
   asyncHandler(async (req: ProtectedRequest, res) => {
-    // Verify client belongs to user
-    const clientExists = await ClientRepo.existsForUser(
-      req.body.clientId,
-      req.user.id,
-    );
-    if (!clientExists) {
-      throw new BadRequestError('Client not found or does not belong to you');
+    // ONLY verify client if clientId is provided
+    if (req.body.clientId) {
+      const clientExists = await ClientRepo.existsForUser(
+        req.body.clientId,
+        req.user.id,
+      );
+      if (!clientExists) {
+        throw new BadRequestError('Client not found or does not belong to you');
+      }
     }
 
     // If projectId provided, verify it belongs to user
@@ -163,8 +165,8 @@ router.post(
 
     const invoice = await InvoiceRepo.create({
       userId: req.user.id,
-      clientId: req.body.clientId,
-      projectId: req.body.projectId,
+      clientId: req.body.clientId || null,
+      projectId: req.body.projectId || null,
       invoiceNumber,
       issueDate,
       dueDate,

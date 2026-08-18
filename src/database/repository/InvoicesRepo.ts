@@ -3,7 +3,7 @@ import { Invoice, InvoiceStatus, Prisma } from '@prisma/client';
 
 export interface CreateInvoiceData {
   userId: string;
-  clientId: string;
+  clientId?: string | null;
   projectId?: string;
   invoiceNumber: string;
   issueDate: Date;
@@ -46,7 +46,7 @@ export interface UpdateInvoiceData {
 
 export interface InvoiceWithDetails extends Invoice {
   lineItems: any[];
-  client: any;
+  client?: any;
   project?: any;
 }
 
@@ -134,6 +134,8 @@ async function create(data: CreateInvoiceData): Promise<InvoiceWithDetails> {
   return prisma.invoice.create({
     data: {
       ...invoiceData,
+      clientId: invoiceData.clientId || null,
+      projectId: invoiceData.projectId || null,
       lineItems: {
         create: lineItems,
       },

@@ -3,7 +3,7 @@ import { InvoiceStatus } from '@prisma/client';
 
 export default {
   create: Joi.object().keys({
-    clientId: Joi.string().required().uuid(),
+    clientId: Joi.string().optional().uuid().allow(null),
     projectId: Joi.string().optional().uuid(),
     issueDate: Joi.date().required(),
     dueDate: Joi.date().required().greater(Joi.ref('issueDate')),
@@ -26,6 +26,7 @@ export default {
   }),
 
   update: Joi.object().keys({
+    clientId: Joi.string().optional().uuid().allow(null),
     issueDate: Joi.date().optional(),
     dueDate: Joi.date().optional(),
     taxRate: Joi.number().optional().min(0).max(100),
@@ -66,13 +67,25 @@ export default {
   }),
 
   batchSend: Joi.object().keys({
-    invoiceIds: Joi.array().items(Joi.string().uuid()).required().min(1).max(50),
+    invoiceIds: Joi.array()
+      .items(Joi.string().uuid())
+      .required()
+      .min(1)
+      .max(50),
   }),
 
   markPaid: Joi.object({
     amount: Joi.number().positive().required(),
     paymentMethod: Joi.string()
-      .valid('STRIPE', 'BANK_TRANSFER', 'CASH', 'CHECK', 'MOBILE_MONEY', 'CRYPTO', 'OTHER')
+      .valid(
+        'STRIPE',
+        'BANK_TRANSFER',
+        'CASH',
+        'CHECK',
+        'MOBILE_MONEY',
+        'CRYPTO',
+        'OTHER',
+      )
       .required(),
     paidAt: Joi.string().isoDate().required(),
     notes: Joi.string().max(500).optional().allow(''),

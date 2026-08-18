@@ -3,7 +3,7 @@ import { Project, ProjectStatus, Prisma } from '@prisma/client';
 
 export interface CreateProjectData {
   userId: string;
-  clientId: string;
+  clientId?: string | null;
   proposalId?: string;
   contractId?: string;
   name: string;
@@ -27,7 +27,7 @@ export interface UpdateProjectData {
 }
 
 export interface ProjectWithDetails extends Project {
-  client: any;
+  client?: any;
   proposal?: any;
   contract?: any;
   invoices?: any[];
@@ -148,7 +148,7 @@ async function create(data: CreateProjectData): Promise<ProjectWithDetails> {
   return prisma.project.create({
     data: {
       userId: data.userId,
-      clientId: data.clientId,
+      clientId: data.clientId || null,
       proposalId: data.proposalId,
       contractId: data.contractId,
       name: data.name,
