@@ -1,3 +1,4 @@
+import { Decimal } from '@prisma/client/runtime/library';
 import prisma from '../index';
 import { Client, Prisma, PaymentTerms } from '@prisma/client';
 
@@ -316,6 +317,140 @@ async function findAllForExport(userId: string): Promise<any[]> {
   });
 }
 
+async function createProject(
+  clientId: string,
+  userId: string,
+  data: {
+    name: string;
+    description?: string;
+    startDate: Date;
+    endDate?: Date;
+    totalBudget: string;
+    currency?: string;
+    paymentPlan?: any;
+  },
+) {
+  return await prisma.project.create({
+    data: {
+      clientId,
+      userId,
+      name: data.name,
+      description: data.description || null,
+      startDate: data.startDate,
+      endDate: data.endDate || null,
+      totalBudget: new Decimal(data.totalBudget),
+      currency: data.currency || 'USD',
+      paymentPlan: data.paymentPlan || null,
+    },
+    include: {
+      client: true,
+      invoices: {
+        select: {
+          id: true,
+          total: true,
+          status: true,
+        },
+      },
+      milestones: {
+        select: {
+          id: true,
+          amount: true,
+          status: true,
+        },
+      },
+    },
+  });
+}
+async function getClientProjects(
+  clientId: string,
+  userId: string,
+  filters: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: string;
+    sortBy?: string;
+    sortOrder?: string;
+  },
+) {
+  const page = filters.page || 1;
+  const limit = filters.limit || 20;
+  const skip = (page - 1) * limit;
+  const search = filters.search || '';
+  const status = filters.status || null;
+  const sortBy = filters.sortBy || 'createdAt';
+  const sortOrder = filters.sortOrder || 'desc';
+
+  // Build where clause
+  const where: any = {
+    clientId,
+    userId,
+  };
+
+  // Add search filter (search by project name or description)
+  if (search) {
+    where.OR = [
+      { name: { contains: search, mode: 'insensitive' } },
+      { description: { contains: search, mode: 'insensitive' } },
+    ];
+  }
+
+  // Add status filter
+  if (status) {
+    where.status = status;
+  }
+
+  // Build orderBy
+  const orderBy: any = {};
+  orderBy[sortBy] = sortOrder;
+
+  // Get total count for pagination
+  const total = await prisma.project.count({ where });
+
+  // Get paginated projects
+  const projects = await prisma.project.findMany({
+    where,
+    include: {
+      client: {
+        select: {
+          id: true,
+          companyName: true,
+          email: true,
+        },
+      },
+      invoices: {
+        select: {
+          id: true,
+          total: true,
+          status: true,
+        },
+      },
+      milestones: {
+        select: {
+          id: true,
+          amount: true,
+          status: true,
+        },
+      },
+    },
+    orderBy,
+    skip,
+    take: limit,
+  });
+
+  return {
+    projects,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+      hasNextPage: page < Math.ceil(total / limit),
+      hasPrevPage: page > 1,
+    },
+  };
+}
+
 export default {
   existsForUser,
   findById,
@@ -328,4 +463,6 @@ export default {
   getStats,
   getHealth,
   findAllForExport,
+  createProject,
+  getClientProjects,
 };

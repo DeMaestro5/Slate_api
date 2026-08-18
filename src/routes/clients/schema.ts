@@ -37,4 +37,28 @@ export default {
     limit: Joi.number().integer().min(1).max(100).optional().default(20),
     search: Joi.string().optional().allow('').max(255),
   }),
+
+  createProjectForClient: Joi.object().keys({
+    name: Joi.string().required().min(1).max(255),
+    description: Joi.string().optional().allow('').max(1000),
+    startDate: Joi.date().iso().required(),
+    endDate: Joi.date().min(Joi.ref('startDate')).optional(),
+    totalBudget: Joi.number().positive().required(),
+    currency: Joi.string().length(3).uppercase().optional().default('USD'),
+    paymentPlan: Joi.array().optional(),
+  }),
+
+  getClientProjects: Joi.object().keys({
+    page: Joi.number().integer().min(1).optional().default(1),
+    limit: Joi.number().integer().min(1).max(100).optional().default(20),
+    search: Joi.string().optional().allow('').max(255),
+    status: Joi.string()
+      .valid('ACTIVE', 'COMPLETED', 'PAUSED', 'ARCHIVED')
+      .optional(),
+    sortBy: Joi.string()
+      .valid('createdAt', 'startDate', 'endDate', 'totalBudget', 'name')
+      .optional()
+      .default('createdAt'),
+    sortOrder: Joi.string().valid('asc', 'desc').optional().default('desc'),
+  }),
 };
