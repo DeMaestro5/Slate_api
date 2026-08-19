@@ -33,6 +33,7 @@ router.get(
         portfolioBio: true,
         portfolioAvatar: true,
         portfolioLocation: true,
+        portfolioTemplate: true,
         isAvailable: true,
         linkedinUrl: true,
         twitterUrl: true,
@@ -58,7 +59,10 @@ router.get(
     });
 
     // Calculate total views
-    const totalViews = portfolioItems.reduce((sum, item) => sum + item.views, 0);
+    const totalViews = portfolioItems.reduce(
+      (sum, item) => sum + item.views,
+      0,
+    );
 
     // Format response
     new SuccessResponse('Public portfolio fetched successfully', {
@@ -68,6 +72,7 @@ router.get(
         bio: user.portfolioBio,
         avatar: user.portfolioAvatar ?? user.profilePicUrl ?? null,
         location: user.portfolioLocation,
+        portfolioTemplate: user.portfolioTemplate,
         isAvailable: user.isAvailable,
         email: user.email, // Contact email
         linkedinUrl: user.linkedinUrl,

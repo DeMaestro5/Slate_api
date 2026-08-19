@@ -236,6 +236,7 @@ model User {
   portfolioBio      String?    @db.Text
   portfolioAvatar   String?
   portfolioLocation String?
+  portfolioTemplate String     @default("classic")
   isAvailable       Boolean    @default(true)
   linkedinUrl       String?
   twitterUrl        String?

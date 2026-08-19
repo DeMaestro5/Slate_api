@@ -144,6 +144,7 @@ export function formatSettings(settings: any) {
       portfolioTitle: settings.portfolioTitle,
       portfolioBio: settings.portfolioBio,
       portfolioLocation: settings.portfolioLocation,
+      portfolioTemplate: settings.portfolioTemplate ?? 'classic',
       isAvailable: settings.isAvailable,
       linkedinUrl: settings.linkedinUrl,
       twitterUrl: settings.twitterUrl,

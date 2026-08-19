@@ -8,6 +8,7 @@ import { ProtectedRequest } from '../../types/app-request';
 import authentication from '../../auth/authentication';
 import Joi from 'joi';
 import { RESERVED_SLUGS } from '../portfolio/schema';
+import { PORTFOLIO_TEMPLATE_SLUGS } from '../../constants/portfolioTemplates';
 
 const router = express.Router();
 
@@ -37,6 +38,9 @@ const portfolioProfileSchema = Joi.object().keys({
   portfolioBio: Joi.string().optional().allow('').max(500),
   portfolioAvatar: Joi.string().uri().optional().allow(''),
   portfolioLocation: Joi.string().optional().allow('').max(100),
+  portfolioTemplate: Joi.string()
+    .optional()
+    .valid(...PORTFOLIO_TEMPLATE_SLUGS),
   isAvailable: Joi.boolean().optional(),
   linkedinUrl: Joi.string().uri().optional().allow(''),
   twitterUrl: Joi.string().uri().optional().allow(''),
@@ -77,6 +81,7 @@ router.put(
         portfolioBio: req.body.portfolioBio,
         portfolioAvatar: req.body.portfolioAvatar,
         portfolioLocation: req.body.portfolioLocation,
+        portfolioTemplate: req.body.portfolioTemplate, // NEW
         isAvailable: req.body.isAvailable,
         linkedinUrl: req.body.linkedinUrl,
         twitterUrl: req.body.twitterUrl,
@@ -91,6 +96,7 @@ router.put(
         portfolioBio: true,
         portfolioAvatar: true,
         portfolioLocation: true,
+        portfolioTemplate: true, // NEW
         isAvailable: true,
         linkedinUrl: true,
         twitterUrl: true,
@@ -101,7 +107,9 @@ router.put(
     new SuccessResponse('Portfolio profile updated successfully', {
       profile: updatedUser,
       publicUrl: updatedUser.portfolioSlug
-        ? `${process.env.FRONTEND_URL || 'https://novba.com'}/${updatedUser.portfolioSlug}`
+        ? `${process.env.FRONTEND_URL || 'https://novba.com'}/${
+            updatedUser.portfolioSlug
+          }`
         : null,
     }).send(res);
   }),
@@ -125,6 +133,7 @@ router.get(
         portfolioBio: true,
         portfolioAvatar: true,
         portfolioLocation: true,
+        portfolioTemplate: true,
         isAvailable: true,
         linkedinUrl: true,
         twitterUrl: true,
@@ -135,7 +144,9 @@ router.get(
     new SuccessResponse('Portfolio profile fetched successfully', {
       profile: user,
       publicUrl: user?.portfolioSlug
-        ? `${process.env.FRONTEND_URL || 'https://novba.com'}/${user.portfolioSlug}`
+        ? `${process.env.FRONTEND_URL || 'https://novba.com'}/${
+            user.portfolioSlug
+          }`
         : null,
     }).send(res);
   }),

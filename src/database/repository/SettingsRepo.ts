@@ -173,6 +173,7 @@ async function getAllSettings(userId: string) {
       portfolioTitle: true,
       portfolioBio: true,
       portfolioLocation: true,
+      portfolioTemplate: true,
       isAvailable: true,
       linkedinUrl: true,
       twitterUrl: true,
