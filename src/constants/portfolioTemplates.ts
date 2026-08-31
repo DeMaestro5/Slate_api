@@ -30,6 +30,10 @@ export const PORTFOLIO_TEMPLATE_SLUGS = [
   'lens',
   'reel',
   'atelier',
+  'notebook',
+  'arcade',
+  'atlas',
+  'sticky-wall',
 ] as const;
 
 export type PortfolioTemplateSlug = (typeof PORTFOLIO_TEMPLATE_SLUGS)[number];
