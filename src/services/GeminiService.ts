@@ -280,7 +280,7 @@ Respond ONLY with a valid JSON object. No markdown fence, no text explanation ou
 
   try {
     const completion = await getClient().chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
+      model: 'openai/gpt-oss-120b',
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.3,
       response_format: { type: 'json_object' },
@@ -381,7 +381,7 @@ The 4 percentOfTotal values must sum to exactly 100.
 
   try {
     const completion = await getClient().chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
+      model: 'openai/gpt-oss-120b',
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.3,
       response_format: { type: 'json_object' },
@@ -529,7 +529,7 @@ Generate exactly 5 recommendations. Respond ONLY with a JSON array. No markdown,
 
   try {
     const completion = await getClient().chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
+      model: 'openai/gpt-oss-120b',
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.7,
       max_tokens: 2048,
@@ -634,7 +634,7 @@ Respond ONLY with a JSON array. No markdown, no backticks, no explanation outsid
 
   try {
     const completion = await getClient().chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
+      model: 'openai/gpt-oss-120b',
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.7,
       max_tokens: 2048,
